@@ -1,0 +1,3 @@
+"Test","F_Statistic","P_Value","Decision"
+"Volume → Returns",1.04729197255839,0.370453542729074,"Pas de causalité"
+"Returns → Volume",2.02377313863437,0.108470577144451,"Pas de causalité"
