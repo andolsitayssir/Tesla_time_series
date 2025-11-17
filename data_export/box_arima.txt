@@ -1,0 +1,6 @@
+
+	Box-Ljung test
+
+data:  residuals(arima_model)
+X-squared = 21.436, df = 20, p-value = 0.3719
+

@@ -1,0 +1,8 @@
+
+	Ljung-Box test
+
+data:  Residuals from ARIMA(0,0,0) with zero mean
+Q* = 264.35, df = 263, p-value = 0.4651
+
+Model df: 0.   Total lags used: 263
+

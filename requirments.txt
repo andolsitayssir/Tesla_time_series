@@ -1,0 +1,12 @@
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+torch
+gluonts
+neuralprophet
+darts
+statsmodels
+python-dotenv
+openai

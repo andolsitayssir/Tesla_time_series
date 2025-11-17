@@ -1,0 +1,67 @@
+
+VAR Estimation Results:
+========================= 
+Endogenous variables: ts_returns, ts_volume 
+Deterministic variables: const 
+Sample size: 1314 
+Log Likelihood: 2199.304 
+Roots of the characteristic polynomial:
+0.5149 0.5149 0.4767 0.3262 0.302 0.302
+Call:
+VAR(y = var_data, p = 3, type = "const")
+
+
+Estimation results for equation ts_returns: 
+=========================================== 
+ts_returns = ts_returns.l1 + ts_volume.l1 + ts_returns.l2 + ts_volume.l2 + ts_returns.l3 + ts_volume.l3 + const 
+
+               Estimate Std. Error t value Pr(>|t|)  
+ts_returns.l1 -0.015539   0.027713  -0.561   0.5751  
+ts_volume.l1  -0.001835   0.004570  -0.402   0.6880  
+ts_returns.l2  0.037904   0.027707   1.368   0.1715  
+ts_volume.l2   0.001145   0.004659   0.246   0.8059  
+ts_returns.l3  0.025780   0.027794   0.928   0.3538  
+ts_volume.l3   0.007550   0.004548   1.660   0.0971 .
+const          0.001362   0.001185   1.150   0.2506  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+
+Residual standard error: 0.04289 on 1307 degrees of freedom
+Multiple R-Squared: 0.005063,	Adjusted R-squared: 0.000496 
+F-statistic: 1.109 on 6 and 1307 DF,  p-value: 0.3549 
+
+
+Estimation results for equation ts_volume: 
+========================================== 
+ts_volume = ts_returns.l1 + ts_volume.l1 + ts_returns.l2 + ts_volume.l2 + ts_returns.l3 + ts_volume.l3 + const 
+
+                Estimate Std. Error t value Pr(>|t|)    
+ts_returns.l1  0.0394677  0.1669942   0.236   0.8132    
+ts_volume.l1  -0.3079703  0.0275370 -11.184  < 2e-16 ***
+ts_returns.l2 -0.4147641  0.1669554  -2.484   0.0131 *  
+ts_volume.l2  -0.2162156  0.0280754  -7.701 2.65e-14 ***
+ts_returns.l3  0.0704648  0.1674793   0.421   0.6740    
+ts_volume.l3  -0.1252015  0.0274075  -4.568 5.39e-06 ***
+const         -0.0007552  0.0071415  -0.106   0.9158    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+
+Residual standard error: 0.2584 on 1307 degrees of freedom
+Multiple R-Squared: 0.1092,	Adjusted R-squared: 0.1052 
+F-statistic: 26.71 on 6 and 1307 DF,  p-value: < 2.2e-16 
+
+
+
+Covariance matrix of residuals:
+           ts_returns ts_volume
+ts_returns  0.0018393 0.0009841
+ts_volume   0.0009841 0.0667852
+
+Correlation matrix of residuals:
+           ts_returns ts_volume
+ts_returns    1.00000   0.08879
+ts_volume     0.08879   1.00000
+
+

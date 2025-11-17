@@ -414,7 +414,7 @@ rmse_prophet <- sqrt(mean((test_data$Close[1:n_pred] - pred_test_prophet$yhat[1:
 mae_prophet
 rmse_prophet
 #rmse =116
-
+summary(m_prophet)
 
 #cross validation prophet
 cv_results_prophet = c()
@@ -604,8 +604,8 @@ resultats_complets = list(
      forecast = arimax_forecast,
      accuracy = arimax_acc
      )      
- ),
-prix = list( 
+  ),
+  prix = list( 
      ets = list(
      model = ets_model,
      forecast = ets_forecast,
@@ -628,12 +628,12 @@ prix = list(
      model = fit_garch_student
    )
  ),
- multivarie = list(
+   multivarie = list(
    var = list(
      model = var_model
 
    )
- ),
+  ),
      comparaisons = list(
      rendements = comparison_returns,
      prix = comparison_prices,
@@ -645,15 +645,10 @@ prix = list(
      test_size = test_size,
      horizon = h
      )
-
-
 )
+
 save(resultats_complets, file = "tesla_resultats_complets.RData")
 
-# expotation des donnés pur code r 
-write.csv(tsla_data, "data_export/tsla_data.csv", row.names = FALSE)
-write.csv(train_data, "data_export/tsla_train_data.csv", row.names = FALSE)
-write.csv(test_data, "data_export/tsla_test_data.csv", row.names = FALSE)
 
 models_results <- data.frame(
   Modele = c("ARIMA", "SARIMA", "ARIMAX", 
@@ -705,28 +700,36 @@ models_results <- data.frame(
 )
 write.csv(models_results, "data_export/models_results_summary.csv", row.names = FALSE)
 
+
+align_forecast <- function(pred_df, test_dates, value_col = "yhat", lower_col = "yhat_lower", upper_col = "yhat_upper") {
+  pred_df$ds <- as.Date(pred_df$ds)
+  test_dates <- as.Date(test_dates)
+  idx <- match(test_dates, pred_df$ds)
+  data.frame(
+    Prophet_Close = if (!is.null(pred_df[[value_col]])) pred_df[[value_col]][idx] else rep(NA, length(test_dates)),
+    Prophet_Lower = if (!is.null(pred_df[[lower_col]])) pred_df[[lower_col]][idx] else rep(NA, length(test_dates)),
+    Prophet_Upper = if (!is.null(pred_df[[upper_col]])) pred_df[[upper_col]][idx] else rep(NA, length(test_dates))
+  )
+}
 predictions_complete <- data.frame(
   Date = test_data$Date[1:h],
   Actual_Close = test_data$Close[1:h],
   Actual_Returns = test_data$Returns[1:h],
-  
-  # Prévisions Returns
-  ARIMA_Returns = as.numeric(arima_forecast$mean),
-  SARIMA_Returns = as.numeric(sarima_forcast$mean),
-  ARIMAX_Returns = as.numeric(arimax_forecast$mean),
-  
-  # Prévisions Prix
-  ETS_Close = as.numeric(ets_forecast$mean),
-  Prophet_Close = pred_test_prophet$yhat[1:h],
-  
-  # Intervalles de confiance
-  ARIMA_Lower = as.numeric(arima_forecast$lower[, 2]),
-  ARIMA_Upper = as.numeric(arima_forecast$upper[, 2]),
-  ETS_Lower = as.numeric(ets_forecast$lower[, 2]),
-  ETS_Upper = as.numeric(ets_forecast$upper[, 2]),
-  Prophet_Lower = pred_test_prophet$yhat_lower[1:h],
-  Prophet_Upper = pred_test_prophet$yhat_upper[1:h]
+  ARIMA_Returns = if(length(arima_forecast$mean) >= h) as.numeric(arima_forecast$mean[1:h]) else rep(NA, h),
+  SARIMA_Returns = if(length(sarima_forcast$mean) >= h) as.numeric(sarima_forcast$mean[1:h]) else rep(NA, h),
+  ARIMAX_Returns = if(length(arimax_forecast$mean) >= h) as.numeric(arimax_forecast$mean[1:h]) else rep(NA, h),
+  ETS_Close = if(length(ets_forecast$mean) >= h) as.numeric(ets_forecast$mean[1:h]) else rep(NA, h),
+  ARIMA_Lower = if(nrow(arima_forecast$lower) >= h) as.numeric(arima_forecast$lower[1:h, 2]) else rep(NA, h),
+  ARIMA_Upper = if(nrow(arima_forecast$upper) >= h) as.numeric(arima_forecast$upper[1:h, 2]) else rep(NA, h),
+  ETS_Lower = if(nrow(ets_forecast$lower) >= h) as.numeric(ets_forecast$lower[1:h, 2]) else rep(NA, h),
+  ETS_Upper = if(nrow(ets_forecast$upper) >= h) as.numeric(ets_forecast$upper[1:h, 2]) else rep(NA, h)
 )
+if (exists("pred_test_prophet")) {
+  prophet_aligned <- align_forecast(pred_test_prophet, test_data$Date[1:h])
+  predictions_complete <- cbind(predictions_complete, prophet_aligned)
+}
+
+# Export only if you need it
 write.csv(predictions_complete, "data_export/predictions_complete.csv", row.names = FALSE)
 
 garch_params <- data.frame(
@@ -822,3 +825,187 @@ granger_results <- data.frame(
 )
 
 write.csv(granger_results, "data_export/granger_causality.csv", row.names = FALSE)
+# 1. Données principales
+write.csv(tsla_data, "data_export/tsla_data.csv", row.names = FALSE)
+write.csv(train_data, "data_export/tsla_train_data.csv", row.names = FALSE)
+write.csv(test_data, "data_export/tsla_test_data.csv", row.names = FALSE)
+
+# 2. Résumés et comparaisons
+write.csv(comparison_returns, "data_export/comparison_returns.csv", row.names = FALSE)
+write.csv(comparison_volatility, "data_export/comparison_volatility.csv", row.names = FALSE)
+write.csv(comparison_prices, "data_export/comparison_prices.csv", row.names = FALSE)
+
+# 3. Résultats de cross-validation
+write.csv(data.frame(RMSE_CV_ARIMA = cross_val_results_arima), "data_export/cv_arima.csv", row.names = FALSE)
+write.csv(data.frame(RMSE_CV_SARIMA = cross_val_results_sarima), "data_export/cv_sarima.csv", row.names = FALSE)
+write.csv(data.frame(RMSE_CV_ETS = cross_val_results_ets), "data_export/cv_ets.csv", row.names = FALSE)
+write.csv(data.frame(RMSE_CV_Prophet = cv_results_prophet), "data_export/cv_prophet.csv", row.names = FALSE)
+write.csv(data.frame(RMSE_CV_ARIMAX = cross_val_results_arimax), "data_export/cv_arimax.csv", row.names = FALSE)
+write.csv(data.frame(RMSE_CV_ARCH = cross_validation_arch), "data_export/cv_arch.csv", row.names = FALSE)
+write.csv(data.frame(RMSE_CV_GARCH = cross_validation_garch), "data_export/cv_garch.csv", row.names = FALSE)
+
+# 4. Paramètres et diagnostics des modèles
+write.csv(arima_params, "data_export/arima_params.csv", row.names = FALSE)
+write.csv(garch_params, "data_export/garch_params.csv", row.names = FALSE)
+
+# 5. Résultats des tests de stationnarité et multivariés
+write.csv(tests_stationnarite, "data_export/tests_stationnarite.csv", row.names = FALSE)
+write.csv(var_serial_results, "data_export/var_serial_results.csv", row.names = FALSE)
+write.csv(granger_results, "data_export/granger_causality.csv", row.names = FALSE)
+
+# 6. Résumés textuels (summary, checkresiduals, etc.)
+capture.output(summary(arima_model), file = "data_export/summary_arima.txt")
+capture.output(summary(sarima_model), file = "data_export/summary_sarima.txt")
+capture.output(summary(arimax_model), file = "data_export/summary_arimax.txt")
+capture.output(summary(ets_model), file = "data_export/summary_ets.txt")
+capture.output(summary(m_prophet), file = "data_export/summary_prophet.txt")
+capture.output(show(fit_arch), file = "data_export/summary_arch.txt")
+capture.output(show(fit_garch), file = "data_export/summary_garch.txt")
+capture.output(show(fit_garch_student), file = "data_export/summary_garch_student.txt")
+capture.output(summary(var_model), file = "data_export/summary_var.txt")
+
+capture.output(checkresiduals(arima_model), file = "data_export/checkresiduals_arima.txt")
+capture.output(checkresiduals(sarima_model), file = "data_export/checkresiduals_sarima.txt")
+capture.output(checkresiduals(ets_model), file = "data_export/checkresiduals_ets.txt")
+capture.output(Box.test(residuals(arima_model), lag=20, type="Ljung-Box"), file = "data_export/box_arima.txt")
+capture.output(Box.test(residuals(sarima_model), lag=20, type="Ljung-Box"), file = "data_export/box_sarima.txt")
+
+# 7. Prédictions complètes
+write.csv(predictions_complete, "data_export/predictions_complete.csv", row.names = FALSE)
+
+# 8. Résumé global pour Python/LLM
+models_results <- data.frame(
+    Modele = c("ARIMA", "SARIMA", "ARIMAX", 
+             "ETS", "Prophet", 
+             "ARCH(1)", "GARCH(1,1) Normal", "GARCH(1,1) Student-t",
+             "VAR(3)"),
+     Type = c("Returns", "Returns", "Returns", 
+           "Prix", "Prix", 
+           "Volatilité", "Volatilité", "Volatilité",
+           "Multivarié"),
+    RMSE_Train = c(
+    arima_acc[1, "RMSE"], sarima_acc[1, "RMSE"], arimax_acc[1, "RMSE"],
+    ets_acc[1, "RMSE"], NA,
+    NA, NA, NA, NA
+  ),
+    RMSE_Test = c(
+    arima_acc[2, "RMSE"], sarima_acc[2, "RMSE"], arimax_acc[2, "RMSE"],
+    ets_acc[2, "RMSE"], rmse_prophet,
+    NA, NA, NA, NA
+  ),
+    MAE_Train = c(
+    arima_acc[1, "MAE"], sarima_acc[1, "MAE"], arimax_acc[1, "MAE"],
+    ets_acc[1, "MAE"], NA,
+    NA, NA, NA, NA
+  ),
+    MAE_Test = c(
+    arima_acc[2, "MAE"], sarima_acc[2, "MAE"], arimax_acc[2, "MAE"],
+    ets_acc[2, "MAE"], mae_prophet,
+    NA, NA, NA, NA
+  ),
+    MAPE_Test = c(
+    arima_acc[2, "MAPE"], sarima_acc[2, "MAPE"], arimax_acc[2, "MAPE"],
+    ets_acc[2, "MAPE"], NA,
+     NA, NA, NA, NA
+     ),
+     AIC = c(
+     AIC(arima_model), AIC(sarima_model), AIC(arimax_model),
+     ets_model$aic, NA,
+     AIC_arch, AIC_garch_norm, AIC_garch_student,
+     NA
+     ),
+     BIC = c(
+     BIC(arima_model), BIC(sarima_model), BIC(arimax_model),
+     ets_model$bic, NA,
+     BIC_arch, BIC_garch_norm, BIC_garch_student,
+     NA
+     )
+)
+write.csv(models_results, "data_export/models_results_summary.csv", row.names = FALSE)
+
+
+resultats_complets = list(
+  donnees = list(
+    tsla_data = tsla_data,
+    train_data = train_data,
+    test_data = test_data
+  ),
+  rendements = list(
+    arima = list(
+      model = arima_model,
+      forecast = arima_forecast,
+      accuracy = arima_acc,
+      cv = cross_val_results_arima
+    ),
+    sarima = list(
+      model = sarima_model,
+      forecast = sarima_forcast,
+      accuracy = sarima_acc,
+      cv = cross_val_results_sarima
+    ),
+    arimax = list(
+      model = arimax_model,
+      forecast = arimax_forecast,
+      accuracy = arimax_acc,
+      cv = cross_val_results_arimax
+    )
+  ),
+  prix = list(
+    ets = list(
+      model = ets_model,
+      forecast = ets_forecast,
+      accuracy = ets_acc,
+      cv = cross_val_results_ets
+    ),
+    prophet = list(
+      model = m_prophet,
+      forecast = forecast_prophet,
+      accuracy = list(RMSE = rmse_prophet, MAE = mae_prophet),
+      cv = cv_results_prophet
+    )
+  ),
+  volatilite = list(
+    arch = list(
+      model = fit_arch,
+      cv = cross_validation_arch
+    ),
+    garch_norm = list(
+      model = fit_garch,
+      cv = cross_validation_garch
+    ),
+    garch_student = list(
+      model = fit_garch_student
+    )
+  ),
+  multivarie = list(
+    var = list(
+      model = var_model,
+      summary = var_summary,
+      serial_test = serial_test
+    )
+  ),
+  comparaisons = list(
+    rendements = comparison_returns,
+    prix = comparison_prices,
+    volatilite = comparison_volatility
+  ),
+  diagnostics = list(
+    arima = capture.output(summary(arima_model)),
+    sarima = capture.output(summary(sarima_model)),
+    arimax = capture.output(summary(arimax_model)),
+    ets = capture.output(summary(ets_model)),
+    prophet = capture.output(summary(m_prophet)),
+    arch = capture.output(summary(fit_arch)),
+    garch = capture.output(summary(fit_garch)),
+    garch_student = capture.output(summary(fit_garch_student)),
+    var = capture.output(summary(var_model))
+  ),
+  metadata = list(
+    date = Sys.Date(),
+    train_size = train_size,
+    test_size = test_size,
+    horizon = h
+  )
+)
+save(resultats_complets, file = "tesla_resultats_complets.RData")
+
