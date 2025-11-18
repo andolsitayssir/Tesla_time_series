@@ -26,7 +26,7 @@ country_holidays           0   -none-     NULL
 stan.fit                   4   -none-     list     
 params                     6   -none-     list     
 history                    7   data.frame list     
-history.dates           1317   POSIXct    numeric  
+history.dates           1318   POSIXct    numeric  
 train.holiday.names        0   -none-     NULL     
 train.component.cols       5   data.frame list     
 component.modes            2   -none-     list     

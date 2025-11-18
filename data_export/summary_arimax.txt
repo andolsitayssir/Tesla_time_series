@@ -1,14 +1,14 @@
 Series: ts_returns 
-Regression with ARIMA(2,0,2) errors 
+Regression with ARIMA(2,0,3) errors 
 
 Coefficients:
-         ar1      ar2      ma1     ma2  intercept     RSI  Price_Range
-      0.6488  -0.8617  -0.6721  0.9054    -0.0524  0.0011      -0.0789
-s.e.  0.0640   0.0904   0.0543  0.0753     0.0052  0.0001       0.0424
+         ar1      ar2      ma1     ma2      ma3  intercept     RSI  Price_Range
+      0.8795  -0.9055  -0.9258  0.9813  -0.0598    -0.0506  0.0011      -0.0796
+s.e.  0.0876   0.0555   0.0936  0.0549   0.0331     0.0052  0.0001       0.0417
 
-sigma^2 = 0.001592:  log likelihood = 2377.1
-AIC=-4738.2   AICc=-4738.09   BIC=-4696.74
+sigma^2 = 0.001592:  log likelihood = 2379.5
+AIC=-4741   AICc=-4740.86   BIC=-4694.34
 
 Training set error measures:
-                        ME       RMSE        MAE MPE MAPE      MASE        ACF1
-Training set -4.145807e-06 0.03979927 0.02884233 Inf  Inf 0.6586975 -0.01776499
+                        ME       RMSE        MAE MPE MAPE     MASE         ACF1
+Training set -4.862857e-06 0.03978116 0.02881354 Inf  Inf 0.657973 0.0006299842

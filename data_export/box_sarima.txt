@@ -1,6 +1,0 @@
-
-	Box-Ljung test
-
-data:  residuals(sarima_model)
-X-squared = 29.854, df = 20, p-value = 0.07225
-

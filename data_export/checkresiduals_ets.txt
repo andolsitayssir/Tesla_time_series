@@ -1,8 +1,0 @@
-
-	Ljung-Box test
-
-data:  Residuals from ETS(M,A,N)
-Q* = 11.284, df = 10, p-value = 0.3359
-
-Model df: 0.   Total lags used: 10
-

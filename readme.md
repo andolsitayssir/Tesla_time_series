@@ -5,11 +5,10 @@ Ce projet analyse et prédit les prix et rendements de l'action Tesla (TSLA) à 
 ## Structure du projet
 
 - `tesla.r` : Analyse, modélisation et export des résultats en R (modèles classiques).
-- `tesla_deep.ipynb` : Modélisation avancée en Python (deep learning, hybrid, Prophet-RNN).
-- `tesla_genai.py` : Génération d'hypothèses et d'explications avec un LLM (OpenAI/Groq).
-- `data_export/` : Résultats, métriques, diagnostics et prédictions exportés.
-- `requirments.txt` : Dépendances Python.
-- `README.md` : Ce fichier.
+- `tesla_deep.ipynb` : Modélisation avancée en Python (deep learning, hybrid, ARIMA_LSTM, Prophet-RNN).
+- `tesla_genai.py` : Génération d'hypothèses et d'explications avec un LLM (gpt-oss-120b).
+- `data_export/` : Résultats, métriques et diagnostics exporter.
+
 
 ## Installation
 
@@ -17,3 +16,5 @@ Ce projet analyse et prédit les prix et rendements de l'action Tesla (TSLA) à 
 2. Installez les dépendances Python :
    ```sh
    pip install -r requirments.txt
+
+   

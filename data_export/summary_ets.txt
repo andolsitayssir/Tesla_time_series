@@ -4,20 +4,20 @@ Call:
 ets(y = s_close_simple)
 
   Smoothing parameters:
-    alpha = 0.984 
-    beta  = 3e-04 
+    alpha = 0.9852 
+    beta  = 4e-04 
 
   Initial states:
-    l = 35.8632 
-    b = 0.6299 
+    l = 35.8603 
+    b = 0.6322 
 
   sigma:  0.0427
 
      AIC     AICc      BIC 
-15108.87 15108.92 15134.79 
+15122.66 15122.71 15148.58 
 
 Training set error measures:
-                     ME     RMSE      MAE        MPE     MAPE      MASE
-Training set -0.4115657 9.340062 6.477116 -0.2991417 3.072958 0.9988491
+                    ME     RMSE      MAE        MPE     MAPE      MASE
+Training set -0.410795 9.344538 6.482693 -0.2983845 3.075203 0.9988454
                      ACF1
-Training set -0.004559225
+Training set -0.005696806

@@ -1,16 +1,14 @@
 Series: ts_returns 
-ARIMA(2,0,2) with non-zero mean 
+ARIMA(2,0,2) with zero mean 
 
 Coefficients:
-         ar1      ar2      ma1     ma2    mean
-      0.7005  -0.8278  -0.7126  0.8772  0.0014
-s.e.  0.1581   0.0674   0.1365  0.0583  0.0012
+         ar1      ar2      ma1     ma2
+      0.7026  -0.8231  -0.7144  0.8723
+s.e.  0.1479   0.0700   0.1282  0.0608
 
-sigma^2 = 0.001828:  log likelihood = 2285.4
-AIC=-4558.81   AICc=-4558.74   BIC=-4527.71
+sigma^2 = 0.00183:  log likelihood = 2285.75
+AIC=-4561.51   AICc=-4561.46   BIC=-4535.59
 
 Training set error measures:
-                        ME       RMSE        MAE MPE MAPE      MASE
-Training set -8.622827e-06 0.04266936 0.03057675 Inf  Inf 0.6983081
-                     ACF1
-Training set -0.006523292
+                      ME       RMSE       MAE MPE MAPE      MASE         ACF1
+Training set 0.001313156 0.04271427 0.0306222 Inf  Inf 0.6992746 -0.006676214

@@ -18,7 +18,7 @@ library(zoo)
 library(corrplot)
 library(rugarch)
 library(sandwich)
-library(prophet)
+
 # --- Partie 1 : IMPORTATION ET PR2PARATION DES DONNEES ----
 getSymbols("TSLA", src = "yahoo", from = "2020-01-01", to = Sys.Date(), auto.assign = TRUE)
 tsla_data=data.frame(
@@ -197,6 +197,7 @@ summary(sarima_model)
 checkresiduals(sarima_model)
 Box.test(residuals(sarima_model), lag=20, type="Ljung-Box")
 #p_value >> 0.05 donc on ne rejette pas H0
+# Pas d'autocorrélation significative dans les résidus
 
 sarima_forcast <- forecast(sarima_model, h=h)
 plot(sarima_forcast, main="Prévisions SARIMA")
@@ -306,6 +307,7 @@ show(fit_garch_student)
 #model gargh avec distribution student est plus adapté aux rendements de Tesla
 #amelioration des tests de diagnostic
 #les p_values des tests de diagnostic sont plus élevées qu'avec la distribution normale
+#indique une meilleure adéquation aux données
 
 # cross validation arch , garch
 cross_validation_arch=c()
@@ -415,7 +417,7 @@ mae_prophet
 rmse_prophet
 #rmse =116
 summary(m_prophet)
-
+show(m_prophet)
 #cross validation prophet
 cv_results_prophet = c()
 for (i in 1:(k-1)){
@@ -554,7 +556,7 @@ LogLik_garch_norm <- -fit_garch@fit$LLH
 LogLik_garch_student <- -fit_garch_student@fit$LLH
 
 comparison_volatility <- data.frame(
-  Modèle = c("ARCH(1) Normal", "GARCH(1,1) Normal", "GARCH(1,1) Student-t"),
+  Modèle = c("ARCH_Normal", "GARCH_Normal", "GARCH_Student-t"),
   AIC = c(AIC_arch, AIC_garch_norm, AIC_garch_student),
   BIC = c(BIC_arch, BIC_garch_norm, BIC_garch_student),
   LogLikelihood = c(LogLik_arch, LogLik_garch_norm, LogLik_garch_student)
@@ -580,80 +582,12 @@ comparison_prices
 
 
 
-# Sauvegarde des models #
-
-resultats_complets = list(
- donnees = list(
-   tsla_data = tsla_data,
-   train_data = train_data,
-   test_data = test_data
- ),
- rendements = list(
-   arima = list(
-   model = arima_model,
-   forecast = arima_forecast,
-     accuracy = arima_acc
-     ),
-     sarima = list(
-     model = sarima_model,
-     forecast = sarima_forcast,
-     accuracy = sarima_acc
-     ),
-     arimax = list(
-     model = arimax_model,
-     forecast = arimax_forecast,
-     accuracy = arimax_acc
-     )      
-  ),
-  prix = list( 
-     ets = list(
-     model = ets_model,
-     forecast = ets_forecast,
-     accuracy = ets_acc
-   ),
-   prophet = list(
-     model = m_prophet,
-     forecast = forecast_prophet,
-     accuracy = list(RMSE = rmse_prophet, MAE = mae_prophet)
-   )
- ), 
- volatilite = list(
-   arch = list(
-     model = fit_arch
-   ),
-   garch_norm = list(
-     model = fit_garch
-   ),
-   garch_student = list(
-     model = fit_garch_student
-   )
- ),
-   multivarie = list(
-   var = list(
-     model = var_model
-
-   )
-  ),
-     comparaisons = list(
-     rendements = comparison_returns,
-     prix = comparison_prices,
-     volatilite = comparison_volatility
-     ),
-     metadata = list(
-     date = Sys.Date(),
-     train_size = train_size,
-     test_size = test_size,
-     horizon = h
-     )
-)
-
-save(resultats_complets, file = "tesla_resultats_complets.RData")
-
+## sauvegarde pour L'IA génerative
 
 models_results <- data.frame(
   Modele = c("ARIMA", "SARIMA", "ARIMAX", 
              "ETS", "Prophet", 
-             "ARCH(1)", "GARCH(1,1) Normal", "GARCH(1,1) Student-t",
+             "ARCH(1)", "GARCH_Normal", "GARCH_Student-t",
              "VAR(3)"),
   Type = c("Returns", "Returns", "Returns", 
            "Prix", "Prix", 
@@ -696,85 +630,21 @@ models_results <- data.frame(
      ets_model$bic, NA,
      BIC_arch, BIC_garch_norm, BIC_garch_student,
      NA
-     )
+     ),
+     p_value_Residus = c(
+     Box.test(residuals(arima_model), lag=20, type="Ljung-Box")$p.value,
+     Box.test(residuals(sarima_model), lag=20, type="Ljung-Box")$p.value,
+     Box.test(residuals(arimax_model), lag=20, type="Ljung-Box")$p.value,
+     checkresiduals(ets_model)$p.value,
+     
+    
 )
 write.csv(models_results, "data_export/models_results_summary.csv", row.names = FALSE)
 
 
-align_forecast <- function(pred_df, test_dates, value_col = "yhat", lower_col = "yhat_lower", upper_col = "yhat_upper") {
-  pred_df$ds <- as.Date(pred_df$ds)
-  test_dates <- as.Date(test_dates)
-  idx <- match(test_dates, pred_df$ds)
-  data.frame(
-    Prophet_Close = if (!is.null(pred_df[[value_col]])) pred_df[[value_col]][idx] else rep(NA, length(test_dates)),
-    Prophet_Lower = if (!is.null(pred_df[[lower_col]])) pred_df[[lower_col]][idx] else rep(NA, length(test_dates)),
-    Prophet_Upper = if (!is.null(pred_df[[upper_col]])) pred_df[[upper_col]][idx] else rep(NA, length(test_dates))
-  )
-}
-predictions_complete <- data.frame(
-  Date = test_data$Date[1:h],
-  Actual_Close = test_data$Close[1:h],
-  Actual_Returns = test_data$Returns[1:h],
-  ARIMA_Returns = if(length(arima_forecast$mean) >= h) as.numeric(arima_forecast$mean[1:h]) else rep(NA, h),
-  SARIMA_Returns = if(length(sarima_forcast$mean) >= h) as.numeric(sarima_forcast$mean[1:h]) else rep(NA, h),
-  ARIMAX_Returns = if(length(arimax_forecast$mean) >= h) as.numeric(arimax_forecast$mean[1:h]) else rep(NA, h),
-  ETS_Close = if(length(ets_forecast$mean) >= h) as.numeric(ets_forecast$mean[1:h]) else rep(NA, h),
-  ARIMA_Lower = if(nrow(arima_forecast$lower) >= h) as.numeric(arima_forecast$lower[1:h, 2]) else rep(NA, h),
-  ARIMA_Upper = if(nrow(arima_forecast$upper) >= h) as.numeric(arima_forecast$upper[1:h, 2]) else rep(NA, h),
-  ETS_Lower = if(nrow(ets_forecast$lower) >= h) as.numeric(ets_forecast$lower[1:h, 2]) else rep(NA, h),
-  ETS_Upper = if(nrow(ets_forecast$upper) >= h) as.numeric(ets_forecast$upper[1:h, 2]) else rep(NA, h)
-)
-if (exists("pred_test_prophet")) {
-  prophet_aligned <- align_forecast(pred_test_prophet, test_data$Date[1:h])
-  predictions_complete <- cbind(predictions_complete, prophet_aligned)
-}
+a
 
-# Export only if you need it
-write.csv(predictions_complete, "data_export/predictions_complete.csv", row.names = FALSE)
 
-garch_params <- data.frame(
-  Modele = c("ARCH(1)", "GARCH(1,1) Normal", "GARCH(1,1) Student-t"),
-  Mu = c(
-    coef(fit_arch)["mu"],
-    coef(fit_garch)["mu"],
-    coef(fit_garch_student)["mu"]
-  ),
-  Omega = c(
-    coef(fit_arch)["omega"],
-    coef(fit_garch)["omega"],
-    coef(fit_garch_student)["omega"]
-  ),
-  Alpha1 = c(
-    coef(fit_arch)["alpha1"],
-    coef(fit_garch)["alpha1"],
-    coef(fit_garch_student)["alpha1"]
-  ),
-  Beta1 = c(
-    NA,
-    coef(fit_garch)["beta1"],
-    coef(fit_garch_student)["beta1"]
-  ),
-  Shape = c(
-    NA,
-     NA,
-     coef(fit_garch_student)["shape"]
-     ),
-     Persistence = c(
-     coef(fit_arch)["alpha1"],
-     coef(fit_garch)["alpha1"] + coef(fit_garch)["beta1"],
-     coef(fit_garch_student)["alpha1"] + coef(fit_garch_student)["beta1"]
-     )
-)
-arima_params <- data.frame(
-  Modele = "ARIMA",
-  Ordre = paste0("(", paste(arimaorder(arima_model), collapse = ","), ")"),
-  Sigma2 = arima_model$sigma2,
-  LogLik = arima_model$loglik,
-  AIC = AIC(arima_model),
-  BIC = BIC(arima_model)
-)
-write.csv(arima_params, "data_export/arima_params.csv", row.names = FALSE)
-write.csv(garch_params, "data_export/garch_params.csv", row.names = FALSE)
 
 tests_stationnarite <- data.frame(
   Variable = c("Close", "Returns", "Volume_Change"),
@@ -794,16 +664,6 @@ write.csv(tests_stationnarite, "data_export/tests_stationnarite.csv", row.names 
 
 serial_test <- serial.test(var_model, lags.pt=16, type="PT.asymptotic")
 
-var_serial_results <- data.frame(
-  Test = "Portmanteau Test",
-  Chi_Squared = serial_test$serial$statistic,
-  DF = serial_test$serial$parameter,
-  P_Value = serial_test$serial$p.value,
-  Interpretation = ifelse(serial_test$serial$p.value < 0.05,
-                         "Autocorrélation présente",
-                         "Pas d'autocorrélation")
-)
-write.csv(var_serial_results, "data_export/var_serial_results.csv", row.names = FALSE)
 
 
 granger_results <- data.frame(
@@ -830,24 +690,6 @@ write.csv(tsla_data, "data_export/tsla_data.csv", row.names = FALSE)
 write.csv(train_data, "data_export/tsla_train_data.csv", row.names = FALSE)
 write.csv(test_data, "data_export/tsla_test_data.csv", row.names = FALSE)
 
-# 2. Résumés et comparaisons
-write.csv(comparison_returns, "data_export/comparison_returns.csv", row.names = FALSE)
-write.csv(comparison_volatility, "data_export/comparison_volatility.csv", row.names = FALSE)
-write.csv(comparison_prices, "data_export/comparison_prices.csv", row.names = FALSE)
-
-# 3. Résultats de cross-validation
-write.csv(data.frame(RMSE_CV_ARIMA = cross_val_results_arima), "data_export/cv_arima.csv", row.names = FALSE)
-write.csv(data.frame(RMSE_CV_SARIMA = cross_val_results_sarima), "data_export/cv_sarima.csv", row.names = FALSE)
-write.csv(data.frame(RMSE_CV_ETS = cross_val_results_ets), "data_export/cv_ets.csv", row.names = FALSE)
-write.csv(data.frame(RMSE_CV_Prophet = cv_results_prophet), "data_export/cv_prophet.csv", row.names = FALSE)
-write.csv(data.frame(RMSE_CV_ARIMAX = cross_val_results_arimax), "data_export/cv_arimax.csv", row.names = FALSE)
-write.csv(data.frame(RMSE_CV_ARCH = cross_validation_arch), "data_export/cv_arch.csv", row.names = FALSE)
-write.csv(data.frame(RMSE_CV_GARCH = cross_validation_garch), "data_export/cv_garch.csv", row.names = FALSE)
-
-# 4. Paramètres et diagnostics des modèles
-write.csv(arima_params, "data_export/arima_params.csv", row.names = FALSE)
-write.csv(garch_params, "data_export/garch_params.csv", row.names = FALSE)
-
 # 5. Résultats des tests de stationnarité et multivariés
 write.csv(tests_stationnarite, "data_export/tests_stationnarite.csv", row.names = FALSE)
 write.csv(var_serial_results, "data_export/var_serial_results.csv", row.names = FALSE)
@@ -863,149 +705,4 @@ capture.output(show(fit_arch), file = "data_export/summary_arch.txt")
 capture.output(show(fit_garch), file = "data_export/summary_garch.txt")
 capture.output(show(fit_garch_student), file = "data_export/summary_garch_student.txt")
 capture.output(summary(var_model), file = "data_export/summary_var.txt")
-
-capture.output(checkresiduals(arima_model), file = "data_export/checkresiduals_arima.txt")
-capture.output(checkresiduals(sarima_model), file = "data_export/checkresiduals_sarima.txt")
-capture.output(checkresiduals(ets_model), file = "data_export/checkresiduals_ets.txt")
-capture.output(Box.test(residuals(arima_model), lag=20, type="Ljung-Box"), file = "data_export/box_arima.txt")
-capture.output(Box.test(residuals(sarima_model), lag=20, type="Ljung-Box"), file = "data_export/box_sarima.txt")
-
-# 7. Prédictions complètes
-write.csv(predictions_complete, "data_export/predictions_complete.csv", row.names = FALSE)
-
-# 8. Résumé global pour Python/LLM
-models_results <- data.frame(
-    Modele = c("ARIMA", "SARIMA", "ARIMAX", 
-             "ETS", "Prophet", 
-             "ARCH(1)", "GARCH(1,1) Normal", "GARCH(1,1) Student-t",
-             "VAR(3)"),
-     Type = c("Returns", "Returns", "Returns", 
-           "Prix", "Prix", 
-           "Volatilité", "Volatilité", "Volatilité",
-           "Multivarié"),
-    RMSE_Train = c(
-    arima_acc[1, "RMSE"], sarima_acc[1, "RMSE"], arimax_acc[1, "RMSE"],
-    ets_acc[1, "RMSE"], NA,
-    NA, NA, NA, NA
-  ),
-    RMSE_Test = c(
-    arima_acc[2, "RMSE"], sarima_acc[2, "RMSE"], arimax_acc[2, "RMSE"],
-    ets_acc[2, "RMSE"], rmse_prophet,
-    NA, NA, NA, NA
-  ),
-    MAE_Train = c(
-    arima_acc[1, "MAE"], sarima_acc[1, "MAE"], arimax_acc[1, "MAE"],
-    ets_acc[1, "MAE"], NA,
-    NA, NA, NA, NA
-  ),
-    MAE_Test = c(
-    arima_acc[2, "MAE"], sarima_acc[2, "MAE"], arimax_acc[2, "MAE"],
-    ets_acc[2, "MAE"], mae_prophet,
-    NA, NA, NA, NA
-  ),
-    MAPE_Test = c(
-    arima_acc[2, "MAPE"], sarima_acc[2, "MAPE"], arimax_acc[2, "MAPE"],
-    ets_acc[2, "MAPE"], NA,
-     NA, NA, NA, NA
-     ),
-     AIC = c(
-     AIC(arima_model), AIC(sarima_model), AIC(arimax_model),
-     ets_model$aic, NA,
-     AIC_arch, AIC_garch_norm, AIC_garch_student,
-     NA
-     ),
-     BIC = c(
-     BIC(arima_model), BIC(sarima_model), BIC(arimax_model),
-     ets_model$bic, NA,
-     BIC_arch, BIC_garch_norm, BIC_garch_student,
-     NA
-     )
-)
-write.csv(models_results, "data_export/models_results_summary.csv", row.names = FALSE)
-
-
-resultats_complets = list(
-  donnees = list(
-    tsla_data = tsla_data,
-    train_data = train_data,
-    test_data = test_data
-  ),
-  rendements = list(
-    arima = list(
-      model = arima_model,
-      forecast = arima_forecast,
-      accuracy = arima_acc,
-      cv = cross_val_results_arima
-    ),
-    sarima = list(
-      model = sarima_model,
-      forecast = sarima_forcast,
-      accuracy = sarima_acc,
-      cv = cross_val_results_sarima
-    ),
-    arimax = list(
-      model = arimax_model,
-      forecast = arimax_forecast,
-      accuracy = arimax_acc,
-      cv = cross_val_results_arimax
-    )
-  ),
-  prix = list(
-    ets = list(
-      model = ets_model,
-      forecast = ets_forecast,
-      accuracy = ets_acc,
-      cv = cross_val_results_ets
-    ),
-    prophet = list(
-      model = m_prophet,
-      forecast = forecast_prophet,
-      accuracy = list(RMSE = rmse_prophet, MAE = mae_prophet),
-      cv = cv_results_prophet
-    )
-  ),
-  volatilite = list(
-    arch = list(
-      model = fit_arch,
-      cv = cross_validation_arch
-    ),
-    garch_norm = list(
-      model = fit_garch,
-      cv = cross_validation_garch
-    ),
-    garch_student = list(
-      model = fit_garch_student
-    )
-  ),
-  multivarie = list(
-    var = list(
-      model = var_model,
-      summary = var_summary,
-      serial_test = serial_test
-    )
-  ),
-  comparaisons = list(
-    rendements = comparison_returns,
-    prix = comparison_prices,
-    volatilite = comparison_volatility
-  ),
-  diagnostics = list(
-    arima = capture.output(summary(arima_model)),
-    sarima = capture.output(summary(sarima_model)),
-    arimax = capture.output(summary(arimax_model)),
-    ets = capture.output(summary(ets_model)),
-    prophet = capture.output(summary(m_prophet)),
-    arch = capture.output(summary(fit_arch)),
-    garch = capture.output(summary(fit_garch)),
-    garch_student = capture.output(summary(fit_garch_student)),
-    var = capture.output(summary(var_model))
-  ),
-  metadata = list(
-    date = Sys.Date(),
-    train_size = train_size,
-    test_size = test_size,
-    horizon = h
-  )
-)
-save(resultats_complets, file = "tesla_resultats_complets.RData")
 
