@@ -129,6 +129,7 @@ IMPORTANT:
 - Chaque hypothèse DOIT être ancrée dans les stats observées
 - Pas de suggestions génériques, du concret basé sur les données
 - Mentionne les valeurs numériques des stats pour justifier
+-Donner des paragraphes bien déloppé pour chaque point
 """
     
     
@@ -194,7 +195,7 @@ STYLE:
 - Honnête sur les limites
 - Pas de promesses exagérées
 - Assume que le lecteur ne sait rien en ML
-
+-Donner des paragraphes bien déloppé pour chaque point
 
 """
 
@@ -289,6 +290,7 @@ ANALYSE IA:
 2. Points de DIVERGENCE (différences principales)
 3. Laquelle est plus fiable et pourquoi?
 4. Combiné ensemble, qu'en conclure?
+5-Donner des paragraphes bien développés pour chaque point
 
 Sois honnête et équilibré .
 """

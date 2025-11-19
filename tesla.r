@@ -1,9 +1,8 @@
 library(quantmod)
 install.packages("tidyverse")
 library(tidyverse)
-   
-library(rugarch)    
-library(fpp2)      
+library(rugarch)
+library(fpp2)
 library(forecast)
 install.packages("prophet")
 library(prophet)
@@ -17,7 +16,7 @@ library(vars)
 library(zoo)
 library(corrplot)
 library(rugarch)
-library(sandwich)
+
 
 # --- Partie 1 : IMPORTATION ET PR2PARATION DES DONNEES ----
 getSymbols("TSLA", src = "yahoo", from = "2020-01-01", to = Sys.Date(), auto.assign = TRUE)
@@ -157,7 +156,6 @@ fold_size = floor(n / h)
 #3.1 model ARIMA
 # ---------------
 
-   
 arima_model = auto.arima(ts_returns,seasonal=FALSE,stepwise=FALSE,approximation=FALSE)
 
 summary(arima_model)
@@ -170,13 +168,13 @@ Box.test(residuals(arima_model), lag=20, type="Ljung-Box")
 
 
 arima_forecast <- forecast(arima_model, h=h)
-plot(arima_forecast, main="Prévisions ARIMA")
+plot(arima_forecast, main="Prévisions ARIMA - Rendements de Tesla")
 arima_forecast
 
 arima_acc <- accuracy(arima_forecast, test_data$Returns[1:h])
 arima_acc
 #cross validation arima
-cross_val_results_arima = c()
+cross_val_results_arima =c()
 
 for (i in 1:(k-1)){
   
@@ -200,7 +198,9 @@ Box.test(residuals(sarima_model), lag=20, type="Ljung-Box")
 # Pas d'autocorrélation significative dans les résidus
 
 sarima_forcast <- forecast(sarima_model, h=h)
-plot(sarima_forcast, main="Prévisions SARIMA")
+autoplot(sarima_forcast)+
+  ggtitle("Prévisions SARIMA - Rendements de Tesla")+
+  xlab("Date") + ylab("Rendements (%)")
 sarima_forcast
 
 sarima_acc <- accuracy(sarima_forcast, test_data$Returns[1:h])
@@ -228,6 +228,7 @@ VARselect(var_data, lag.max=10, type="const")
 
 var_model = VAR(var_data, p=3, type="const")
 var_summary = summary(var_model)
+var_summary
 #equation 1 de ts_returns
 #Les rendements passés (t-1, t-2, t-3) et les variations de volume passées (t-1, t-2, t-3) n'ont PAS de pouvoir prédictif sur les rendements futurs
 #equation 2 ts_volume
@@ -237,7 +238,7 @@ var_summary = summary(var_model)
 serial_test = serial.test(var_model, lags.pt=16, type="PT.asymptotic")
 #p_value <<<0.05 donc on rejette H0
 # Présence d'autocorrélation dans les résidus
-
+serial_test
 
 # Causalité de Granger
 # Test 1 : Est-ce que Volume_Change cause Returns ?
@@ -336,6 +337,7 @@ for (i in 1:(k-1)){
 }
 mean(cross_validation_arch)
 #RMSE = 0.09
+
 mean(cross_validation_garch)
 #RMSE = 0.075 
 #-------------------
@@ -391,7 +393,7 @@ m_prophet <- add_regressor(m_prophet, 'Price_Range')
 df_profet$RSI <- train_data$RSI
 df_profet$Price_Range <- train_data$Price_Range
 m_prophet = fit.prophet(m_prophet, df_profet)
-
+summary(m_prophet)
 future = make_future_dataframe(m_prophet, periods = h, freq = "day")
 future$RSI <- c(train_data$RSI, test_data$RSI[1:h])
 future$Price_Range <- c(train_data$Price_Range, test_data$Price_Range[1:h])
@@ -514,7 +516,7 @@ for (i in 1:(k-1)){
   fc_cv <- forecast(arimax_cross_v, h=nrow(test_fold), xreg=xreg_test_cv)
   
   cross_val_results_arimax[i] <- accuracy(fc_cv, test_fold$Returns)[2, "RMSE"]
-  
+
 }
 mean(cross_val_results_arimax)
 #rmse = 0.11 
@@ -585,8 +587,8 @@ comparison_prices
 ## sauvegarde pour L'IA génerative
 
 models_results <- data.frame(
-  Modele = c("ARIMA", "SARIMA", "ARIMAX", 
-             "ETS", "Prophet", 
+  Modele = c("ARIMA", "SARIMA", "ARIMAX",
+             "ETS", "Prophet",
              "ARCH(1)", "GARCH_Normal", "GARCH_Student-t",
              "VAR(3)"),
   Type = c("Returns", "Returns", "Returns", 
@@ -616,28 +618,27 @@ models_results <- data.frame(
   MAPE_Test = c(
     arima_acc[2, "MAPE"], sarima_acc[2, "MAPE"], arimax_acc[2, "MAPE"],
     ets_acc[2, "MAPE"], NA,
-     NA, NA, NA, NA
-     ),
-     AIC = c(
-     AIC(arima_model), AIC(sarima_model), AIC(arimax_model),
-     ets_model$aic, NA,
-     AIC_arch, AIC_garch_norm, AIC_garch_student,
-     NA
-     ),
-     BIC = c(
-     BIC(arima_model), BIC(sarima_model), BIC(arimax_model
-     ),
-     ets_model$bic, NA,
-     BIC_arch, BIC_garch_norm, BIC_garch_student,
-     NA
-     ),
-     p_value_Residus = c(
-     Box.test(residuals(arima_model), lag=20, type="Ljung-Box")$p.value,
-     Box.test(residuals(sarima_model), lag=20, type="Ljung-Box")$p.value,
-     Box.test(residuals(arimax_model), lag=20, type="Ljung-Box")$p.value,
-     checkresiduals(ets_model)$p.value,
-     
-    
+    NA, NA, NA, NA
+  ),
+  AIC = c(
+    AIC(arima_model), AIC(sarima_model), AIC(arimax_model),
+    ets_model$aic, NA,
+    AIC_arch, AIC_garch_norm, AIC_garch_student,
+    NA
+  ),
+  BIC = c(
+    BIC(arima_model), BIC(sarima_model), BIC(arimax_model),
+    ets_model$bic, NA,
+    BIC_arch, BIC_garch_norm, BIC_garch_student,
+    NA
+  ),
+  p_value_Residus = c(
+    Box.test(residuals(arima_model), lag=20, type="Ljung-Box")$p.value,
+    Box.test(residuals(sarima_model), lag=20, type="Ljung-Box")$p.value,
+    Box.test(residuals(arimax_model), lag=20, type="Ljung-Box")$p.value,
+    checkresiduals(ets_model)$p.value,
+    NA, NA, NA, NA, NA
+  )
 )
 write.csv(models_results, "data_export/models_results_summary.csv", row.names = FALSE)
 
